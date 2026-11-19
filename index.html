@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Secret Santa 2026</title>
+
+<style>
+:root{
+    --primary:#0054A6;
+    --secondary:#0078D4;
+    --success:#107C10;
+    --bg:#F4F7FA;
+    --border:#D8E2ED;
+    --text:#1F2937;
+}
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:Segoe UI,Tahoma,sans-serif;
+}
+
+body{
+    background:var(--bg);
+    padding:30px;
+    color:var(--text);
+}
+
+.container{
+    max-width:950px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:16px;
+    box-shadow:0 4px 20px rgba(0,0,0,.08);
+}
+
+h1{
+    color:var(--primary);
+    margin-bottom:10px;
+}
+
+.description{
+    color:#666;
+    margin-bottom:20px;
+}
+
+textarea{
+    width:100%;
+    min-height:220px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    font-size:15px;
+}
+
+.buttons{
+    margin-top:15px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+button{
+    border:none;
+    padding:12px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.primary{
+    background:var(--primary);
+    color:white;
+}
+
+.secondary{
+    background:#EAF2FB;
+}
+
+.success{
+    background:var(--success);
+    color:white;
+}
+
+.info{
+    margin-top:15px;
+    font-weight:600;
+}
+
+.error{
+    color:red;
+    margin-top:10px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th{
+    background:#EEF5FF;
+}
+
+th,td{
+    border:1px solid var(--border);
+    padding:10px;
+    text-align:left;
+}
+
+.hidden{
+    display:none;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>🎁 Secret Santa 2026</h1>
+
+<div class="description">
+Katılımcıları alt alta yazın ve eşleştirmeyi oluşturun.
+</div>
+
+<textarea id="participants">
+Betül
+İlker
+Pınar
+Tayfun
+Selma
+Ebru
+Burcu
+Osman
+</textarea>
+
+<div class="buttons">
+
+<button class="primary" onclick="generateDraw()">
+Eşleştirmeyi Oluştur
+</button>
+
+<button class="secondary" onclick="toggleResults()">
+Gizle / Göster
+</button>
+
+<button class="secondary" onclick="copyResults()">
+Sonuçları Kopyala
+</button>
+
+<button class="success" onclick="downloadCSV()">
+CSV İndir
+</button>
+
+</div>
+
+<div id="info" class="info"></div>
+<div id="error" class="error"></div>
+
+<div id="results"></div>
+
+</div>
+
+<script>
+
+let currentAssignments = [];
+
+function shuffle(array){
+
+    for(let i=array.length-1;i>0;i--){
+
+        const j=Math.floor(Math.random()*(i+1));
+
+        [array[i],array[j]]=
+        [array[j],array[i]];
+    }
+
+    return array;
+}
+
+function generateDraw(){
+
+    const error =
+    document.getElementById("error");
+
+    const info =
+    document.getElementById("info");
+
+    error.innerHTML="";
+
+    let people =
+    document
+    .getElementById("participants")
+    .value
+    .split("\n")
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+    people=[...new Set(people)];
+
+    if(people.length<3){
+
+        error.innerHTML=
+        "En az 3 farklı katılımcı girmelisiniz.";
+
+        return;
+    }
+
+    let receivers=[];
+    let success=false;
+
+    for(let i=0;i<2000;i++){
+
+        receivers=
+        shuffle([...people]);
+
+        if(receivers.every(
+            (r,index)=>
+            r!==people[index]
+        )){
+            success=true;
+            break;
+        }
+    }
+
+    if(!success){
+
+        error.innerHTML=
+        "Eşleştirme oluşturulamadı.";
+
+        return;
+    }
+
+    currentAssignments=[];
+
+    let html=`
+    <table>
+    <tr>
+        <th>Kişi</th>
+        <th>Hediye Alacağı Kişi</th>
+    </tr>`;
+
+    people.forEach((person,index)=>{
+
+        currentAssignments.push({
+            giver:person,
+            receiver:receivers[index]
+        });
+
+        html+=`
+        <tr>
+            <td>${person}</td>
+            <td>🎁 ${receivers[index]}</td>
+        </tr>`;
+    });
+
+    html+="</table>";
+
+    document.getElementById("results").innerHTML=html;
+
+    info.innerHTML=
+    `Katılımcı Sayısı: ${people.length}`;
+}
+
+function toggleResults(){
+
+    const div =
+    document.getElementById("results");
+
+    if(div.classList.contains("hidden")){
+        div.classList.remove("hidden");
+    }else{
+        div.classList.add("hidden");
+    }
+}
+
+function copyResults(){
+
+    if(currentAssignments.length===0) return;
+
+    let text="SECRET SANTA SONUÇLARI\n\n";
+
+    currentAssignments.forEach(x=>{
+
+        text +=
+        `${x.giver} ➜ ${x.receiver}\n`;
+    });
+
+    navigator.clipboard.writeText(text);
+
+    alert("Sonuçlar panoya kopyalandı.");
+}
+
+function downloadCSV(){
+
+    if(currentAssignments.length===0) return;
+
+    let csv =
+    "Kisi,Hediye Alacagi Kisi\n";
+
+    currentAssignments.forEach(x=>{
+
+        csv +=
+        `"${x.giver}","${x.receiver}"\n`;
+    });
+
+    const blob =
+    new Blob(
+        [csv],
+        {type:"text/csv"}
+    );
+
+    const url =
+    window.URL.createObjectURL(blob);
+
+    const a =
+    document.createElement("a");
+
+    a.href=url;
+    a.download="SecretSanta.csv";
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+}
+
+</script>
+
+</body>
+</html>
